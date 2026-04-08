@@ -15,6 +15,12 @@ import twelve from "./markdown/twelve";
 import thirteen from "./markdown/thirteen";
 import fourteen from "./markdown/fourteen";
 import fifteen from "./markdown/fifteen";
+import sixteen from "./markdown/sixteen";
+import seventeen from "./markdown/seventeen";
+import eighteen from "./markdown/eighteen";
+import nineteen from "./markdown/nineteen";
+import twenty from "./markdown/twenty";
+import twentyone from "./markdown/twentyone";
 
 import content from "./content.md";
 
@@ -53,6 +59,12 @@ export default {
     thirteen,
     fourteen,
     fifteen,
+    sixteen,
+    seventeen,
+    eighteen,
+    nineteen,
+    twenty,
+    twentyone,
     custom,
   },
   code: {
