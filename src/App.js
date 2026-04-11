@@ -32,6 +32,7 @@ import pluginCenter from "./utils/pluginCenter";
 import appContext from "./utils/appContext";
 import {uploadAdaptor} from "./utils/imageHosting";
 import bindHotkeys, {betterTab, rightClick} from "./utils/hotkey";
+import pako from "pako";
 
 @inject("content")
 @inject("navbar")
@@ -87,6 +88,7 @@ class App extends Component {
       console.log(e);
     }
     this.setEditorContent();
+    this.checkHashImport();
     this.setCustomImageHosting();
   }
 
@@ -158,6 +160,25 @@ class App extends Component {
   setCurrentIndex(index) {
     this.index = index;
   }
+
+  checkHashImport = () => {
+    const {hash} = window.location;
+    if (hash.startsWith("#import/")) {
+      try {
+        const base64data = hash.substring(8);
+        const compressed = Uint8Array.from(atob(base64data), (c) => c.charCodeAt(0));
+        const decompressed = pako.ungzip(compressed, {to: "string"});
+        this.props.content.setContent(decompressed);
+        const {markdownEditor} = this.props.content;
+        if (markdownEditor) {
+          markdownEditor.setValue(decompressed);
+        }
+        window.history.replaceState(null, "", window.location.pathname);
+      } catch (e) {
+        console.error("Failed to import content from URL:", e);
+      }
+    }
+  };
 
   solveScreenChange = () => {
     const {isImmersiveEditing} = this.props.view;

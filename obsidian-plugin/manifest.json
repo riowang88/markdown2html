@@ -1,0 +1,9 @@
+{
+  "id": "obsidian-md2html",
+  "name": "Markdown2HTML Publisher",
+  "version": "1.0.0",
+  "minAppVersion": "0.15.0",
+  "description": "一键上传图片并发布到 markdown2html 编辑器",
+  "author": "rio",
+  "isDesktopOnly": true
+}
