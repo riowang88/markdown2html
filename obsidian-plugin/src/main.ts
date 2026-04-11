@@ -12,11 +12,11 @@ interface Md2HtmlSettings {
 
 const DEFAULT_SETTINGS: Md2HtmlSettings = {
   githubUsername: "",
-  githubRepo: "",
+  githubRepo: "image-hosting",
   githubToken: "",
   githubBranch: "main",
   useJsdelivr: true,
-  md2htmlUrl: "http://md.aizhuanqian.online",
+  md2htmlUrl: "https://md.riowang.win",
 };
 
 // Cache uploaded image URLs to avoid re-uploading within a session
@@ -85,8 +85,8 @@ export default class Md2HtmlPlugin extends Plugin {
       return null;
     }
 
-    if (!this.settings.githubUsername || !this.settings.githubRepo || !this.settings.githubToken) {
-      new Notice("请先在设置中配置 GitHub 图床信息");
+    if (!this.settings.githubToken) {
+      new Notice("请先在设置中配置 GitHub Token");
       return null;
     }
 
@@ -149,7 +149,7 @@ export default class Md2HtmlPlugin extends Plugin {
     const total = uniqueImages.size;
     let current = 0;
 
-    for (const [fileName, ref] of uniqueImages) {
+    for (const [fileName] of uniqueImages) {
       current++;
 
       // Check cache first
@@ -207,16 +207,21 @@ export default class Md2HtmlPlugin extends Plugin {
 
     // Read file as binary
     const arrayBuffer = await this.app.vault.readBinary(file);
-    const base64Content = arrayBufferToBase64(new Uint8Array(arrayBuffer));
+    const bytes = new Uint8Array(arrayBuffer);
+    let binary = "";
+    for (let i = 0; i < bytes.byteLength; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    const base64Content = btoa(binary);
 
-    // Generate upload path: images/YYYY-MM/{timestamp}-{filename}
-    const now = new Date();
-    const datePath = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-    const timestamp = now.getTime();
-    const uploadPath = `images/${datePath}/${timestamp}-${file.name}`;
+    // Use timestamp + filename to avoid conflicts
+    const timestamp = Date.now();
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const remotePath = `images/${timestamp}_${safeName}`;
 
+    // PUT to GitHub API
     const response = await requestUrl({
-      url: `https://api.github.com/repos/${githubUsername}/${githubRepo}/contents/${uploadPath}`,
+      url: `https://api.github.com/repos/${githubUsername}/${githubRepo}/contents/${remotePath}`,
       method: "PUT",
       headers: {
         Authorization: `token ${githubToken}`,
@@ -224,21 +229,21 @@ export default class Md2HtmlPlugin extends Plugin {
         Accept: "application/vnd.github.v3+json",
       },
       body: JSON.stringify({
-        message: `upload: ${file.name}`,
+        message: `upload ${file.name}`,
         content: base64Content,
         branch: githubBranch,
       }),
     });
 
-    if (response.status !== 201 && response.status !== 200) {
+    if (response.status !== 200 && response.status !== 201) {
       throw new Error(`GitHub API error: ${response.status}`);
     }
 
+    // Return CDN URL or raw URL
     if (useJsdelivr) {
-      return `https://cdn.jsdelivr.net/gh/${githubUsername}/${githubRepo}@${githubBranch}/${uploadPath}`;
+      return `https://cdn.jsdelivr.net/gh/${githubUsername}/${githubRepo}@${githubBranch}/${remotePath}`;
     }
-
-    return response.json.content.download_url;
+    return `https://raw.githubusercontent.com/${githubUsername}/${githubRepo}/${githubBranch}/${remotePath}`;
   }
 }
 
@@ -262,7 +267,22 @@ class Md2HtmlSettingTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
 
-    containerEl.createEl("h2", { text: "GitHub 图床设置" });
+    containerEl.createEl("h2", { text: "Markdown2HTML 设置" });
+
+    new Setting(containerEl)
+      .setName("编辑器地址")
+      .setDesc("你部署的 markdown2html 地址")
+      .addText((text) =>
+        text
+          .setPlaceholder("https://md.riowang.win")
+          .setValue(this.plugin.settings.md2htmlUrl)
+          .onChange(async (value) => {
+            this.plugin.settings.md2htmlUrl = value;
+            await this.plugin.saveSettings();
+          })
+      );
+
+    containerEl.createEl("h3", { text: "GitHub 图床" });
 
     new Setting(containerEl)
       .setName("GitHub 用户名")
@@ -278,7 +298,6 @@ class Md2HtmlSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("GitHub 仓库名")
-      .setDesc("用于存放图片的仓库")
       .addText((text) =>
         text
           .setPlaceholder("image-hosting")
@@ -290,11 +309,11 @@ class Md2HtmlSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Personal Access Token")
-      .setDesc("需要 repo 权限的 GitHub Token")
+      .setName("GitHub Token")
+      .setDesc("需要 repo 权限的 Personal Access Token")
       .addText((text) => {
         text
-          .setPlaceholder("ghp_xxxxxxxxxxxx")
+          .setPlaceholder("ghp_...")
           .setValue(this.plugin.settings.githubToken)
           .onChange(async (value) => {
             this.plugin.settings.githubToken = value;
@@ -317,25 +336,12 @@ class Md2HtmlSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("使用 jsDelivr CDN")
-      .setDesc("推荐开启，国内访问更快")
+      .setDesc("关闭则使用 raw.githubusercontent.com")
       .addToggle((toggle) =>
-        toggle.setValue(this.plugin.settings.useJsdelivr).onChange(async (value) => {
-          this.plugin.settings.useJsdelivr = value;
-          await this.plugin.saveSettings();
-        })
-      );
-
-    containerEl.createEl("h2", { text: "Markdown2HTML 设置" });
-
-    new Setting(containerEl)
-      .setName("编辑器地址")
-      .setDesc("你部署的 markdown2html 地址")
-      .addText((text) =>
-        text
-          .setPlaceholder("http://md.aizhuanqian.online")
-          .setValue(this.plugin.settings.md2htmlUrl)
+        toggle
+          .setValue(this.plugin.settings.useJsdelivr)
           .onChange(async (value) => {
-            this.plugin.settings.md2htmlUrl = value;
+            this.plugin.settings.useJsdelivr = value;
             await this.plugin.saveSettings();
           })
       );

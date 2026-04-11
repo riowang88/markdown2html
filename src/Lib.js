@@ -14,6 +14,7 @@ import footer from "./store/footer";
 import dialog from "./store/dialog";
 import imageHosting from "./store/imageHosting";
 import view from "./store/view";
+import yibanTemplate from "./store/yibanTemplate";
 
 import {isPC} from "./utils/helper";
 import appContext from "./utils/appContext";
@@ -74,6 +75,7 @@ class Lib extends Component {
         dialog={dialog}
         imageHosting={imageHosting}
         view={view}
+        yibanTemplate={yibanTemplate}
       >
         {isPC() ? (
           <appContext.Provider value={appCtx}>

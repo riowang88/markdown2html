@@ -51,6 +51,11 @@ export const EXPORT_FILENAME_SUFFIX = ".md";
 
 export const STYLE_LABELS = ["basic-theme", "markdown-theme", "code-theme", "font-theme"];
 
+export const YIBAN_TEMPLATE_MODE = "yiban_template_mode";
+export const YIBAN_ACTIVE_TEMPLATE = "yiban_active_template";
+export const YIBAN_TEMPLATE_CACHE = "yiban_template_cache";
+export const YIBAN_RECENT_TEMPLATES = "yiban_recent_templates";
+
 export const ENTER_DELAY = 0.5;
 export const LEAVE_DELAY = 0.0;
 

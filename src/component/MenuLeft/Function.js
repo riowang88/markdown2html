@@ -5,6 +5,7 @@ import Reset from "./Function/Reset";
 import Search from "./Function/Search";
 import History from "./Function/History";
 import SitDown from "./Function/SitDown";
+import TemplateGallery from "./Function/TemplateGallery";
 
 import "./common.css";
 
@@ -24,6 +25,12 @@ const menu = (
     </Menu.Item>
     <Menu.Item>
       <SitDown />
+    </Menu.Item>
+
+    <Menu.Divider />
+
+    <Menu.Item>
+      <TemplateGallery />
     </Menu.Item>
   </Menu>
 );

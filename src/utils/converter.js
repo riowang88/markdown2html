@@ -115,6 +115,14 @@ export const solveHtml = () => {
   html = html.replace(/mjx-container/g, "section");
   html = html.replace(/class="mjx-solid"/g, 'fill="none" stroke-width="70"');
   html = html.replace(/<mjx-assistive-mml.+?<\/mjx-assistive-mml>/g, "");
+
+  // Template mode: skip juice inlining since template HTML already has inline styles
+  // eslint-disable-next-line global-require
+  const yibanTemplateStore = require("../store/yibanTemplate").default;
+  if (yibanTemplateStore.isTemplateMode && yibanTemplateStore.activeTemplate) {
+    return html;
+  }
+
   const basicStyle = document.getElementById(BASIC_THEME_ID).innerText;
   const markdownStyle = document.getElementById(MARKDOWN_THEME_ID).innerText;
   const codeStyle = document.getElementById(CODE_THEME_ID).innerText;

@@ -40,6 +40,7 @@ import pako from "pako";
 @inject("view")
 @inject("dialog")
 @inject("imageHosting")
+@inject("yibanTemplate")
 @observer
 class App extends Component {
   constructor(props) {
@@ -323,10 +324,16 @@ class App extends Component {
     const {isEditAreaOpen, isPreviewAreaOpen, isStyleEditorOpen, isImmersiveEditing} = this.props.view;
     const {isSearchOpen} = this.props.dialog;
 
-    const parseHtml =
-      codeNum === 0
-        ? markdownParserWechat.render(this.props.content.content)
-        : markdownParser.render(this.props.content.content);
+    const {isTemplateMode, activeTemplate, renderedHtml} = this.props.yibanTemplate;
+    let parseHtml;
+    if (isTemplateMode && activeTemplate && renderedHtml) {
+      parseHtml = renderedHtml;
+    } else {
+      parseHtml =
+        codeNum === 0
+          ? markdownParserWechat.render(this.props.content.content)
+          : markdownParser.render(this.props.content.content);
+    }
 
     const mdEditingClass = classnames({
       "nice-md-editing": !isImmersiveEditing,

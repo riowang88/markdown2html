@@ -1,6 +1,7 @@
 import React, {Component} from "react";
 import {observer, inject} from "mobx-react";
 import classnames from "classnames";
+import {Tag} from "antd";
 
 import Bold from "../component/Toolbar/Bold";
 import Code from "../component/Toolbar/Code";
@@ -17,10 +18,16 @@ import CodeTheme from "../component/MenuLeft/CodeTheme";
 import "./Navbar.css";
 
 @inject("view")
+@inject("yibanTemplate")
 @observer
 class Toolbar extends Component {
+  handleExitTemplate = () => {
+    this.props.yibanTemplate.clearActiveTemplate();
+  };
+
   render() {
     const {token} = this.props;
+    const {isTemplateMode, activeTemplate} = this.props.yibanTemplate;
     const niceNavbarClass = classnames({
       "nice-navbar": true,
       "nice-toolbar": true,
@@ -40,7 +47,14 @@ class Toolbar extends Component {
           <Format />
         </div>
         <div className="nice-right-nav">
-          <Theme token={token} />
+          {isTemplateMode && activeTemplate ? (
+            <Tag closable onClose={this.handleExitTemplate} color="green" style={{marginRight: 8, lineHeight: "28px"}}>
+              {"模板: "}
+              {activeTemplate.display_name}
+            </Tag>
+          ) : (
+            <Theme token={token} />
+          )}
           <CodeTheme />
         </div>
       </div>

@@ -34,6 +34,13 @@ export const axiosMdnice = axios.create({
   baseURL: process.env.NODE_ENV === "development" ? "https://math.mdnice.com" : "https://math.mdnice.com",
 });
 
+export const axiosYiban = axios.create({
+  baseURL: "/api/yiban",
+  headers: {
+    Accept: "application/json",
+  },
+});
+
 export const queryParse = (search = window.location.search) => {
   if (!search) return {};
   const queryString = search[0] === "?" ? search.substring(1) : search;
@@ -98,6 +105,20 @@ markdownParserWechat
   .use(markdownItImageFlow) // 横屏移动插件
   .use(markdownItImsize);
 
+// 给 img 标签添加 referrerpolicy="no-referrer"，解决跨域图片加载问题
+const defaultImageRender =
+  markdownParserWechat.renderer.rules.image ||
+  function(tokens, idx, options, env, self) {
+    return self.renderToken(tokens, idx, options);
+  };
+
+function imageWithReferrerPolicy(tokens, idx, options, env, self) {
+  tokens[idx].attrPush(["referrerpolicy", "no-referrer"]);
+  return defaultImageRender(tokens, idx, options, env, self);
+}
+
+markdownParserWechat.renderer.rules.image = imageWithReferrerPolicy;
+
 // 普通解析器，代码高亮用highlight
 export const markdownParser = new MarkdownIt({
   html: true,
@@ -138,6 +159,8 @@ markdownParser
   .use(markdownItLiReplacer) // li 标签中加入 p 标签
   .use(markdownItImageFlow) // 横屏移动插件
   .use(markdownItImsize);
+
+markdownParser.renderer.rules.image = imageWithReferrerPolicy;
 
 export const replaceStyle = (id, css) => {
   const style = document.getElementById(id);
