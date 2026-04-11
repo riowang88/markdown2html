@@ -11,7 +11,7 @@
   "typings": "./lib/index.d.ts",
   "repository": {
     "type": "git",
-    "url": "https://github.com/TaleAi/markdown2html"
+    "url": "https://github.com/qq148376839/markdown2html"
   },
   "scripts": {
     "start": "node scripts/start.js",
@@ -125,7 +125,7 @@
   },
   "build": {
     "productName": "Markdown2Html",
-    "appId": "com.aizhuanqian.www",
+    "appId": "com.markdown2html.app",
     "mac": {
       "target": [
         "dmg",

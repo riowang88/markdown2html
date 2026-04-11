@@ -31,26 +31,28 @@ class VersionDialog extends Component {
 
   handleMore = () => {
     const w = window.open("about:blank");
-    w.location.href = "https://github.com/mdnice/markdown-nice/blob/master/CHANGELOG.md";
+    w.location.href = "https://github.com/qq148376839/markdown2html/blob/master/CHANGELOG.md";
   };
 
   handleDocs = () => {
     const w = window.open("about:blank");
-    w.location.href = "https://aizhuanqian.online/mardown2html";
+    w.location.href = "https://github.com/qq148376839/markdown2html";
   };
 
   componentDidMount = async () => {
     try {
       const data = {
-        versionId: 1,
-        versionNumber: "1.0.0",
-        versionTimeline: ["2020-09-09 优化排版", "2020-09-08 fork自markdown nice"],
-        recommend: {
-          link: "https://www.aizhuanqian.com",
-          mainInfo: "欢迎关注我的博客",
-        },
-        specialInfo:
-          '<div style="display:flex;justify-content:center;align-items:center;"><img style="width:50%;" src="http://md.aizhuanqian.online/img/wechat_qr.df324554.jpeg"/></div>',
+        versionId: 2,
+        versionNumber: "1.3.0",
+        versionTimeline: [
+          "2025-04-10 新增 Obsidian 插件，支持 URL hash 导入一键发布",
+          "2025-04-09 修复多域名访问支持，homepage 改为相对路径",
+          "2025-04-08 新增 6 个 Markdown 主题（sixteen ~ twentyone）",
+          "2020-09-09 优化排版",
+          "2020-09-08 fork 自 markdown nice",
+        ],
+        recommend: null,
+        specialInfo: "",
       };
       const newestVersion = localStorage.getItem(NEWEST_VERSION);
       if (data.versionNumber !== newestVersion) {
@@ -95,7 +97,7 @@ class VersionDialog extends Component {
               id="nice-version-dialog-doc"
               style={{fontWeight: "bold"}}
               alt=""
-              href="https://aizhuanqian.online/mardown2html"
+              href="https://github.com/qq148376839/markdown2html"
               rel="noopener noreferrer"
               target="_blank"
             >

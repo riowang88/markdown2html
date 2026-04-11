@@ -138,7 +138,7 @@ _这个是斜体_
 
 图片还可以和链接嵌套使用，能够实现推荐卡片的效果，用法如下：
 
-[![Markdown2Html 最全功能介绍](https://my-wechat.mdnice.com/dance.gif)](https://aizhuanqian.online/mardown2html)
+[![Markdown2Html 最全功能介绍](https://my-wechat.mdnice.com/dance.gif)](https://github.com/qq148376839/markdown2html)
 
 ## 4. 特殊语法
 
@@ -287,4 +287,4 @@ Markdown Nice 这么好用，简直是{喜大普奔|hē hē hē hē}呀！
 
 ### 5.3 更多文档
 
-更多文档请参考 [markdown2html-docs](https://aizhuanqian.online/mardown2html "更多文档")
+更多文档请参考 [markdown2html-docs](https://github.com/qq148376839/markdown2html "更多文档")

@@ -45,10 +45,10 @@ class AboutDialog extends Component {
             id="nice-about-dialog-star"
             rel="noopener noreferrer"
             target="_blank"
-            href="https://github.com/TaleAi/markdown2html"
+            href="https://github.com/qq148376839/markdown2html"
             style={style.noBorder}
           >
-            <img alt="" style={style.img} src="https://badgen.net/github/stars/TaleAi/markdown2html" />
+            <img alt="" style={style.img} src="https://badgen.net/github/stars/qq148376839/markdown2html" />
           </a>
         </h3>
 
@@ -61,7 +61,7 @@ class AboutDialog extends Component {
             id="nice-about-dialog-github"
             rel="noopener noreferrer"
             target="_blank"
-            href="https://github.com/TaleAi/markdown2html"
+            href="https://github.com/qq148376839/markdown2html"
           >
             &nbsp;GitHub&nbsp;
           </a>
