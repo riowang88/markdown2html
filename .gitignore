@@ -25,3 +25,9 @@ yarn-error.log*
 dist
 package-lock.json
 lib
+
+# dev-log (session 级别日志，不提交)
+dev-log/
+
+# claude 临时状态
+.claude/.needs-review.claude/decisions/
