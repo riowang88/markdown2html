@@ -1,5 +1,6 @@
 import React, {Component} from "react";
 import {observer, inject} from "mobx-react";
+import {reaction} from "mobx";
 import {Modal, Pagination, Spin, message, Button} from "antd";
 import {fetchTemplateList, fetchTemplateDetail} from "../../utils/yibanTemplate";
 import "./TemplateGalleryDialog.css";
@@ -17,12 +18,19 @@ class TemplateGalleryDialog extends Component {
     };
   }
 
-  componentDidUpdate(prevProps) {
-    const wasOpen = prevProps.dialog.isTemplateGalleryOpen;
-    const isOpen = this.props.dialog.isTemplateGalleryOpen;
-    if (!wasOpen && isOpen) {
-      this.loadTemplates(1);
-    }
+  componentDidMount() {
+    this.disposeReaction = reaction(
+      () => this.props.dialog.isTemplateGalleryOpen,
+      (isOpen) => {
+        if (isOpen && this.props.yibanTemplate.templateList.length === 0) {
+          this.loadTemplates(1);
+        }
+      },
+    );
+  }
+
+  componentWillUnmount() {
+    if (this.disposeReaction) this.disposeReaction();
   }
 
   loadTemplates = async (page) => {

@@ -31,6 +31,7 @@ import Italic from "./Italic";
 import Link from "./Link";
 import Quote from "./Quote";
 import Table from "./Table";
+import Template from "./Template";
 
 export default (props) => {
   switch (props.name) {
@@ -96,6 +97,8 @@ export default (props) => {
       return <Quote {...props} />;
     case "table":
       return <Table {...props} />;
+    case "template":
+      return <Template {...props} />;
     default:
       return <svg />;
   }
