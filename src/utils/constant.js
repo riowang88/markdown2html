@@ -48,6 +48,7 @@ export const IMAGE_HOSTING_NAMES = {
 
 export const RIGHT_SYMBOL = "✔️";
 export const EXPORT_FILENAME_SUFFIX = ".md";
+export const AGNES_API_KEY = "agnes_api_key";
 
 export const STYLE_LABELS = ["basic-theme", "markdown-theme", "code-theme", "font-theme"];
 

@@ -15,6 +15,7 @@ import dialog from "./store/dialog";
 import imageHosting from "./store/imageHosting";
 import view from "./store/view";
 import yibanTemplate from "./store/yibanTemplate";
+import aiGeneration from "./store/aiGeneration";
 
 import {isPC} from "./utils/helper";
 import appContext from "./utils/appContext";
@@ -76,6 +77,7 @@ class Lib extends Component {
         imageHosting={imageHosting}
         view={view}
         yibanTemplate={yibanTemplate}
+        aiGeneration={aiGeneration}
       >
         {isPC() ? (
           <appContext.Provider value={appCtx}>

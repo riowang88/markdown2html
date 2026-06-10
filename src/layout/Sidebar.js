@@ -8,6 +8,8 @@ import Zhihu from "../component/Sidebar/Zhihu";
 import Juejin from "../component/Sidebar/Juejin";
 import Pdf from "../component/Sidebar/ExportPdf";
 import ExportMarkdown from "../component/Sidebar/Markdown";
+import TemplateGallery from "../component/Sidebar/TemplateGallery";
+import AIImage from "../component/Sidebar/AIImage";
 import "./Sidebar.css";
 
 // @inject("userInfo")
@@ -27,6 +29,8 @@ class Sidebar extends Component {
         <Juejin />
         <ExportMarkdown />
         <Pdf />
+        <AIImage />
+        <TemplateGallery />
         <PreviewType />
       </div>
     );

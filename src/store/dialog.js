@@ -19,6 +19,8 @@ class Dialog {
 
   @observable isTemplateGalleryOpen = false;
 
+  @observable isAIImageOpen = false;
+
   @action
   setImageOpen = (isImageOpen) => {
     this.isImageOpen = isImageOpen;
@@ -62,6 +64,11 @@ class Dialog {
   @action
   setTemplateGalleryOpen = (isTemplateGalleryOpen) => {
     this.isTemplateGalleryOpen = isTemplateGalleryOpen;
+  };
+
+  @action
+  setAIImageOpen = (isAIImageOpen) => {
+    this.isAIImageOpen = isAIImageOpen;
   };
 }
 

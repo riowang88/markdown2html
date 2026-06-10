@@ -54,14 +54,14 @@ if (window.localStorage.getItem(CONTENT) === null) {
   window.localStorage.setItem(CONTENT, TEMPLATE.content);
 }
 if (!window.localStorage.getItem(STYLE)) {
-  window.localStorage.setItem(STYLE, TEMPLATE.custom);
+  window.localStorage.setItem(STYLE, TEMPLATE.theme.custom);
 }
 if (!window.localStorage.getItem(THEME_LIST)) {
   window.localStorage.setItem(
     THEME_LIST,
     JSON.stringify([
-      {themeId: "normal", name: "默认主题", css: TEMPLATE.normal},
-      {themeId: "custom", name: "自定义", css: TEMPLATE.custom},
+      {themeId: "1", name: "赤陶暖阳", css: TEMPLATE.theme.one},
+      {themeId: "custom", name: "自定义", css: TEMPLATE.theme.custom},
     ]),
   );
 }

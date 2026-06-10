@@ -7,6 +7,7 @@ import FormDialog from "../component/Dialog/FormDialog";
 import HistoryDialog from "../component/Dialog/HistoryDialog";
 import SitDownDialog from "../component/Dialog/SitDownDialog";
 import TemplateGalleryDialog from "../component/Dialog/TemplateGalleryDialog";
+import AIImageDialog from "../component/Dialog/AIImageDialog";
 
 class Dialog extends Component {
   render() {
@@ -20,6 +21,7 @@ class Dialog extends Component {
         <HistoryDialog />
         <SitDownDialog />
         <TemplateGalleryDialog />
+        <AIImageDialog />
       </div>
     );
   }

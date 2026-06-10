@@ -18,8 +18,8 @@ class Reset extends Component {
       cancelText: "取消",
       onOk: () => {
         this.props.content.setContent(TEMPLATE.content);
-        this.props.content.setStyle(TEMPLATE.normal);
-        this.props.content.setCustomStyle(TEMPLATE.custom);
+        this.props.content.setStyle(TEMPLATE.theme.one);
+        this.props.content.setCustomStyle(TEMPLATE.theme.custom);
         this.props.navbar.setTemplateNum(0);
         message.success("重置成功！");
       },

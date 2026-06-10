@@ -6,7 +6,6 @@ import {RIGHT_SYMBOL, TEMPLATE_NUM, MARKDOWN_THEME_ID, STYLE} from "../../utils/
 import {replaceStyle} from "../../utils/helper";
 import TEMPLATE from "../../template/index";
 import "./Theme.css";
-import axios from "axios";
 
 @inject("content")
 @inject("navbar")
@@ -40,28 +39,22 @@ class Theme extends React.Component {
 
   componentDidMount = async () => {
     const themeList = [
-      {themeId: "normal", name: "默认主题", css: TEMPLATE.theme.normal},
-      {themeId: "1", name: "橙心", css: TEMPLATE.theme.one},
-      {themeId: "2", name: "姹紫", css: TEMPLATE.theme.two},
-      {themeId: "3", name: "嫩青", css: TEMPLATE.theme.three},
-      {themeId: "4", name: "绿意", css: TEMPLATE.theme.four},
-      {themeId: "5", name: "红绯", css: TEMPLATE.theme.five},
-      {themeId: "6", name: "蓝莹", css: TEMPLATE.theme.six},
-      {themeId: "7", name: "兰青", css: TEMPLATE.theme.seven},
-      {themeId: "8", name: "山吹", css: TEMPLATE.theme.eight},
-      {themeId: "9", name: "前端之巅同款", css: TEMPLATE.theme.nine},
-      {themeId: "10", name: "极客黑", css: TEMPLATE.theme.ten},
-      {themeId: "11", name: "蔷薇紫", css: TEMPLATE.theme.eleven},
-      {themeId: "12", name: "萌绿", css: TEMPLATE.theme.twelve},
-      {themeId: "13", name: "全栈蓝", css: TEMPLATE.theme.thirteen},
-      {themeId: "14", name: "极简黑", css: TEMPLATE.theme.fourteen},
-      {themeId: "15", name: "橙蓝风", css: TEMPLATE.theme.fifteen},
-      {themeId: "16", name: "瑞士极简", css: TEMPLATE.theme.sixteen, isNew: true},
-      {themeId: "17", name: "新粗野主义", css: TEMPLATE.theme.seventeen, isNew: true},
-      {themeId: "18", name: "暗夜优雅", css: TEMPLATE.theme.eighteen, isNew: true},
-      {themeId: "19", name: "柔和低语", css: TEMPLATE.theme.nineteen, isNew: true},
-      {themeId: "20", name: "极光渐变", css: TEMPLATE.theme.twenty, isNew: true},
-      {themeId: "21", name: "墨纸古韵", css: TEMPLATE.theme.twentyone, isNew: true},
+      {themeId: "1", name: "赤陶暖阳", css: TEMPLATE.theme.one},
+      {themeId: "2", name: "樱花物语", css: TEMPLATE.theme.two},
+      {themeId: "3", name: "落日杂志", css: TEMPLATE.theme.three},
+      {themeId: "4", name: "薄荷科技", css: TEMPLATE.theme.four},
+      {themeId: "16", name: "瑞士极简", css: TEMPLATE.theme.sixteen},
+      {themeId: "17", name: "新粗野主义", css: TEMPLATE.theme.seventeen},
+      {themeId: "18", name: "暗夜优雅", css: TEMPLATE.theme.eighteen},
+      {themeId: "19", name: "柔和低语", css: TEMPLATE.theme.nineteen},
+      {themeId: "20", name: "极光渐变", css: TEMPLATE.theme.twenty},
+      {themeId: "21", name: "墨纸古韵", css: TEMPLATE.theme.twentyone},
+      {themeId: "22", name: "金融简报", css: TEMPLATE.theme.twentytwo, isNew: true},
+      {themeId: "23", name: "竹林清风", css: TEMPLATE.theme.twentythree, isNew: true},
+      {themeId: "24", name: "赛博朋克", css: TEMPLATE.theme.twentyfour, isNew: true},
+      {themeId: "25", name: "咖啡手记", css: TEMPLATE.theme.twentyfive, isNew: true},
+      {themeId: "26", name: "极简线条", css: TEMPLATE.theme.twentysix, isNew: true},
+      {themeId: "27", name: "故事集", css: TEMPLATE.theme.twentyseven, isNew: true},
       {themeId: "custom", name: "自定义", css: TEMPLATE.theme.custom},
     ];
 
@@ -70,19 +63,21 @@ class Theme extends React.Component {
     if (!window.localStorage.getItem(STYLE)) {
       window.localStorage.setItem(STYLE, TEMPLATE.theme.custom);
     }
-    const templateNum = parseInt(window.localStorage.getItem(TEMPLATE_NUM), 10);
+    let templateNum = parseInt(window.localStorage.getItem(TEMPLATE_NUM), 10);
+
+    // 越界修正：旧索引超出新列表范围时归零
+    if (Number.isNaN(templateNum) || templateNum < 0 || templateNum >= themeList.length) {
+      templateNum = 0;
+      this.props.navbar.setTemplateNum(0);
+    }
 
     // 主题样式初始化，属于自定义主题则从localstorage中读数据
     let style = "";
     if (templateNum === themeList.length - 1) {
       style = window.localStorage.getItem(STYLE);
     } else {
-      if (templateNum) {
-        const {css} = themeList[templateNum];
-        style = css;
-      } else {
-        style = TEMPLATE.normal;
-      }
+      const {css} = themeList[templateNum];
+      style = css;
     }
     this.props.content.setStyle(style);
     replaceStyle(MARKDOWN_THEME_ID, style);

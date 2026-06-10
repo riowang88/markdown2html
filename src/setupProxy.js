@@ -9,4 +9,12 @@ module.exports = function(app) {
       pathRewrite: {"^/api/yiban": "/api"},
     }),
   );
+  app.use(
+    "/api/agnes",
+    createProxyMiddleware({
+      target: "https://apihub.agnes-ai.com",
+      changeOrigin: true,
+      pathRewrite: {"^/api/agnes": ""},
+    }),
+  );
 };
