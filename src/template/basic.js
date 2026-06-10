@@ -290,10 +290,8 @@ export default `/*默认样式，最佳实践*/
   margin-top: 0px;
 }
 #nice .code-snippet__fix .code-snippet__line-index {
-  counter-reset: line;
   flex-shrink: 0;
   height: 100%;
-  padding: 1em;
   list-style-type: none;
   padding: 16px;
   margin: 0;
@@ -302,17 +300,8 @@ export default `/*默认样式，最佳实践*/
   list-style-type: none;
   text-align: right;
   line-height: 26px;
-  color: black;
-  margin: 0;
-}
-#nice .code-snippet__fix .code-snippet__line-index li::before {
-  min-width: 1.5em;
-  text-align: right;
-  left: -2.5em;
-  counter-increment: line;
-  content: counter(line);
-  display: inline;
   color: rgba(0,0,0,0.3);
+  margin: 0;
 }
 #nice .code-snippet__fix pre {
   overflow-x: auto;

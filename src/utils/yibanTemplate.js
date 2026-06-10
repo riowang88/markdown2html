@@ -3,8 +3,9 @@ import {axiosYiban, markdownParser} from "./helper";
 // ============ API Functions ============
 
 export async function fetchTemplateList(page = 1, pageSize = 20) {
+  const offset = (page - 1) * pageSize;
   const res = await axiosYiban.get("/style_template/system/list", {
-    params: {page, page_size: pageSize},
+    params: {offset, page_size: pageSize},
   });
   return {
     list: res.data.style_template_list || [],
@@ -29,10 +30,13 @@ export function parseMarkdownSections(markdownText) {
   let currentHeading = null;
   let currentLines = [];
   let foundFirstH2 = false;
+  let beforeH1 = true;
+  const preH1Lines = [];
 
   for (const line of lines) {
     if (/^# /.test(line) && !title) {
       title = line.replace(/^# /, "").trim();
+      beforeH1 = false;
       continue;
     }
 
@@ -43,10 +47,13 @@ export function parseMarkdownSections(markdownText) {
       currentHeading = line.replace(/^## /, "").trim();
       currentLines = [];
       foundFirstH2 = true;
+      beforeH1 = false;
       continue;
     }
 
-    if (!foundFirstH2) {
+    if (beforeH1 && !title) {
+      preH1Lines.push(line);
+    } else if (!foundFirstH2) {
       introLines.push(line);
     } else {
       currentLines.push(line);
@@ -57,7 +64,26 @@ export function parseMarkdownSections(markdownText) {
     sections.push({heading: currentHeading, md: currentLines.join("\n")});
   }
 
-  const introMd = introLines.join("\n").trim();
+  const allIntroLines = [...preH1Lines, ...introLines];
+  const introMd = allIntroLines.join("\n").trim();
+
+  if (sections.length === 0) {
+    const bodyMd =
+      introMd ||
+      markdownText
+        .split("\n")
+        .filter((l) => !/^# /.test(l))
+        .join("\n")
+        .trim();
+    if (bodyMd) {
+      sections.push({heading: "", md: bodyMd});
+    }
+  }
+
+  if (!title && sections.length > 0 && sections[0].heading) {
+    title = sections[0].heading;
+  }
+
   return {
     title: title || "",
     intro: introMd ? markdownParser.render(introMd) : "",
