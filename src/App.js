@@ -46,6 +46,7 @@ class App extends Component {
   constructor(props) {
     super(props);
     this.scale = 1;
+    this.isMounted = false;
     this.handleUpdateMathjax = throttle(updateMathjax, 1500);
     this.state = {
       focus: false,
@@ -53,41 +54,43 @@ class App extends Component {
   }
 
   componentDidMount() {
+    this.isMounted = true;
     document.addEventListener("fullscreenchange", this.solveScreenChange);
     document.addEventListener("webkitfullscreenchange", this.solveScreenChange);
     document.addEventListener("mozfullscreenchange", this.solveScreenChange);
     document.addEventListener("MSFullscreenChange", this.solveScreenChange);
-    try {
-      window.MathJax = {
-        tex: {
-          inlineMath: [["$", "$"]],
-          displayMath: [["$$", "$$"]],
-          tags: "ams",
+    window.MathJax = {
+      tex: {
+        inlineMath: [["$", "$"]],
+        displayMath: [["$$", "$$"]],
+        tags: "ams",
+      },
+      svg: {
+        fontCache: "none",
+      },
+      options: {
+        renderActions: {
+          addMenu: [0, "", ""],
+          addContainer: [
+            190,
+            (doc) => {
+              for (const math of doc.math) {
+                this.addContainer(math, doc);
+              }
+            },
+            this.addContainer,
+          ],
         },
-        svg: {
-          fontCache: "none",
-        },
-        options: {
-          renderActions: {
-            addMenu: [0, "", ""],
-            addContainer: [
-              190,
-              (doc) => {
-                for (const math of doc.math) {
-                  this.addContainer(math, doc);
-                }
-              },
-              this.addContainer,
-            ],
-          },
-        },
-      };
-      // eslint-disable-next-line
-      require("mathjax/es5/tex-svg-full");
-      pluginCenter.mathjax = true;
-    } catch (e) {
-      console.log(e);
-    }
+      },
+    };
+    import(/* webpackChunkName: "mathjax" */ "mathjax/es5/tex-svg-full")
+      .then(() => window.MathJax.startup.promise)
+      .then(() => {
+        if (!this.isMounted) return;
+        pluginCenter.mathjax = true;
+        this.handleUpdateMathjax();
+      })
+      .catch((e) => console.error(e));
     this.setEditorContent();
     this.checkHashImport();
     this.setCustomImageHosting();
@@ -100,6 +103,9 @@ class App extends Component {
   }
 
   componentWillUnmount() {
+    this.isMounted = false;
+    pluginCenter.mathjax = false;
+    this.handleUpdateMathjax.cancel();
     document.removeEventListener("fullscreenchange", this.solveScreenChange);
     document.removeEventListener("webkitfullscreenchange", this.solveScreenChange);
     document.removeEventListener("mozfullscreenchange", this.solveScreenChange);

@@ -126,6 +126,63 @@ export default `/*默认样式，最佳实践*/
   line-height: 26px;
 }
 
+/* GitHub/Obsidian 风格告警块 */
+#nice blockquote.markdown-alert {
+  border-left-width: 4px;
+  border-left-style: solid;
+  padding: 12px 16px;
+}
+
+#nice blockquote.markdown-alert p {
+  color: #3e3e3e;
+}
+
+#nice .markdown-alert-title {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: bold;
+}
+
+#nice blockquote.markdown-alert-note {
+  border-left-color: #0969da;
+  background: #ddf4ff;
+}
+#nice .markdown-alert-note .markdown-alert-title {
+  color: #0969da;
+}
+
+#nice blockquote.markdown-alert-tip {
+  border-left-color: #1a7f37;
+  background: #dafbe1;
+}
+#nice .markdown-alert-tip .markdown-alert-title {
+  color: #1a7f37;
+}
+
+#nice blockquote.markdown-alert-important {
+  border-left-color: #8250df;
+  background: #fbefff;
+}
+#nice .markdown-alert-important .markdown-alert-title {
+  color: #8250df;
+}
+
+#nice blockquote.markdown-alert-warning {
+  border-left-color: #9a6700;
+  background: #fff8c5;
+}
+#nice .markdown-alert-warning .markdown-alert-title {
+  color: #9a6700;
+}
+
+#nice blockquote.markdown-alert-caution {
+  border-left-color: #cf222e;
+  background: #ffebe9;
+}
+#nice .markdown-alert-caution .markdown-alert-title {
+  color: #cf222e;
+}
+
 #nice .table-of-contents a {
   border: none;
   color: black;

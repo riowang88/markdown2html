@@ -14,6 +14,7 @@ import markdownItLinkfoot from "./markdown-it-linkfoot";
 import markdownItImageFlow from "./markdown-it-imageflow";
 import highlightjs from "./langHighlight";
 import markdownItLiReplacer from "./markdown-it-li";
+import markdownItAlert from "./markdown-it-alert";
 
 export const axiosGithub = axios.create({
   baseURL: "https://api.github.com",
@@ -98,6 +99,7 @@ markdownParserWechat
   .use(markdownItDeflist) // 定义列表
   .use(markdownItLiReplacer) // li 标签中加入 p 标签
   .use(markdownItImageFlow) // 横屏移动插件
+  .use(markdownItAlert) // GitHub/Obsidian 风格告警块
   .use(markdownItImsize);
 
 // 给 img 标签添加 referrerpolicy="no-referrer"，解决跨域图片加载问题
@@ -153,6 +155,7 @@ markdownParser
   .use(markdownItDeflist) // 定义列表
   .use(markdownItLiReplacer) // li 标签中加入 p 标签
   .use(markdownItImageFlow) // 横屏移动插件
+  .use(markdownItAlert) // GitHub/Obsidian 风格告警块
   .use(markdownItImsize);
 
 markdownParser.renderer.rules.image = imageWithReferrerPolicy;
