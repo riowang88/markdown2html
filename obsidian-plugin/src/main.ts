@@ -66,25 +66,26 @@ export default class Md2HtmlPlugin extends Plugin {
   async onload() {
     await this.loadSettings();
 
+    // 沿用原命令 id，已绑定的快捷键和命令历史会直接进入选择窗口
     this.addCommand({
-      id: "publish",
+      id: "publish-to-md2html",
       name: "发布…（选择公众号排版或博客）",
       callback: () => this.choosePublishTarget(),
     });
 
     this.addCommand({
       id: "publish-to-blog",
-      name: "发布到博客",
+      name: "仅发布到博客",
       callback: () => this.publishToBlog(),
     });
 
-    this.addRibbonIcon("send", "发布当前笔记", () => this.choosePublishTarget());
-
     this.addCommand({
-      id: "publish-to-md2html",
-      name: "Publish to Markdown2HTML",
+      id: "publish-to-md2html-direct",
+      name: "仅发布到公众号排版",
       callback: () => this.publishToMd2Html(),
     });
+
+    this.addRibbonIcon("send", "发布当前笔记", () => this.choosePublishTarget());
 
     this.addCommand({
       id: "upload-images-copy",

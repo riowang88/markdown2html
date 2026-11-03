@@ -26,12 +26,35 @@ class Notice {
   hide() {}
 }
 
+// 记录弹窗里渲染出的按钮，便于模拟点击
+const renderedButtons = [];
+class Setting {
+  constructor() {}
+  setName(name) { this.name = name; return this; }
+  setDesc() { return this; }
+  addButton(cb) {
+    const button = { setButtonText(text) { this.text = text; return this; }, setCta() { return this; }, onClick(fn) { this.click = fn; return this; } };
+    cb(button);
+    renderedButtons.push(button);
+    return this;
+  }
+}
+class Modal {
+  constructor(app) {
+    this.app = app;
+    this.contentEl = { empty() {} };
+    this.titleEl = { setText(text) { this.text = text; } };
+  }
+  open() { this.onOpen(); }
+  close() { this.closed = true; }
+}
+
 const obsidian = {
   App: class {},
-  Modal: class {},
+  Modal,
   Plugin: class {},
   PluginSettingTab: class {},
-  Setting: class {},
+  Setting,
   Notice,
   TFile,
   requestUrl: (options) => requestHandler(options),
@@ -261,4 +284,40 @@ test("提交：中途出错时不会改动分支", async () => {
   const repo = new blog.GitHubRepo({ owner: "owner", repo: "blog", branch: "main", token: "t", postsDir: "p" });
   await assert.rejects(repo.commitFiles([{ path: "a", base64: "" }], "m"), /401: Bad credentials/);
   assert.ok(!calls.includes("PATCH"));
+});
+
+test("原「Publish to Markdown2HTML」命令 id 现在先弹出选择窗口", async () => {
+  const commands = {};
+  const plugin = Object.create(Md2HtmlPlugin.prototype);
+  plugin.loadSettings = async () => {};
+  plugin.addCommand = (command) => (commands[command.id] = command);
+  plugin.addRibbonIcon = () => {};
+  plugin.addSettingTab = () => {};
+  await plugin.onload();
+
+  const calls = [];
+  plugin.choosePublishTarget = () => calls.push("choose");
+  plugin.publishToBlog = () => calls.push("blog");
+  plugin.publishToMd2Html = () => calls.push("md2html");
+  commands["publish-to-md2html"].callback();
+  commands["publish-to-blog"].callback();
+  commands["publish-to-md2html-direct"].callback();
+  assert.deepEqual(calls, ["choose", "blog", "md2html"]);
+  assert.match(commands["publish-to-md2html"].name, /选择公众号排版或博客/);
+});
+
+test("选择窗口：两个按钮分别进入公众号排版和博客发布", () => {
+  const plugin = Object.create(Md2HtmlPlugin.prototype);
+  plugin.app = {};
+  const calls = [];
+  plugin.publishToBlog = () => calls.push("blog");
+  plugin.publishToMd2Html = () => calls.push("md2html");
+
+  for (const text of ["打开排版", "发布到博客"]) {
+    renderedButtons.length = 0;
+    plugin.choosePublishTarget();
+    assert.deepEqual(renderedButtons.map((b) => b.text), ["打开排版", "发布到博客"]);
+    renderedButtons.find((b) => b.text === text).click();
+  }
+  assert.deepEqual(calls, ["md2html", "blog"]);
 });
