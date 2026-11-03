@@ -1,4 +1,4 @@
-import { App, Plugin, PluginSettingTab, Setting, Notice, TFile, requestUrl } from "obsidian";
+import { App, Plugin, PluginSettingTab, Setting, Notice, TFile, TFolder, requestUrl } from "obsidian";
 import pako from "pako";
 import {
   BlogImageRef,
@@ -12,13 +12,14 @@ import {
   collectImageRefs,
   firstHeading,
   firstParagraph,
+  seriesNumber,
   slugify,
   stripFrontmatter,
   stripLeadingTitle,
   today,
   utf8ToBase64,
 } from "./blog";
-import { BlogPublishModal, PublishTargetModal } from "./modals";
+import { BatchEntry, BlogBatchModal, BlogPublishModal, PublishTargetModal } from "./modals";
 
 interface Md2HtmlSettings {
   githubUsername: string;
@@ -85,6 +86,24 @@ export default class Md2HtmlPlugin extends Plugin {
       callback: () => this.publishToMd2Html(),
     });
 
+    this.addCommand({
+      id: "publish-folder-to-blog",
+      name: "把当前笔记所在文件夹发布到博客",
+      callback: () => this.publishFolderToBlog(),
+    });
+
+    this.registerEvent(
+      this.app.workspace.on("file-menu", (menu, file) => {
+        if (!(file instanceof TFolder)) return;
+        menu.addItem((item) =>
+          item
+            .setTitle("发布整个文件夹到博客")
+            .setIcon("send")
+            .onClick(() => this.publishFolderToBlog(file))
+        );
+      })
+    );
+
     this.addRibbonIcon("send", "发布当前笔记", () => this.choosePublishTarget());
 
     this.addCommand({
@@ -107,6 +126,7 @@ export default class Md2HtmlPlugin extends Plugin {
   choosePublishTarget() {
     new PublishTargetModal(this.app, (target) => {
       if (target === "blog") this.publishToBlog();
+      else if (target === "blog-folder") this.publishFolderToBlog();
       else this.publishToMd2Html();
     }).open();
   }
@@ -185,35 +205,122 @@ export default class Md2HtmlPlugin extends Plugin {
     };
   }
 
+  /** 生成一篇文章及其图片要提交的文件 */
+  async buildPostFiles(file: TFile, body: string, meta: BlogPostMeta, index: BlogIndex): Promise<CommitFile[]> {
+    const { files, markdown, coverName } = await this.prepareBlogFiles(file, stripLeadingTitle(body, meta.title), meta.slug);
+    const updating = index.posts.has(meta.slug);
+    const postMeta: BlogPostMeta = {
+      ...meta,
+      updated: updating && meta.published !== today() ? today() : undefined,
+      image: meta.image && coverName ? `./images/${meta.slug}/${coverName}` : undefined,
+    };
+    files.push({
+      path: `${this.settings.blogPostsDir}/${meta.slug}.md`,
+      base64: utf8ToBase64(buildFrontmatter(postMeta) + markdown),
+    });
+    return files;
+  }
+
+  async writeBlogFields(file: TFile, meta: BlogPostMeta) {
+    await this.app.fileManager.processFrontMatter(file, (fm) => {
+      fm.blog_slug = meta.slug;
+      fm.blog_category = meta.category;
+      fm.blog_tags = meta.tags;
+      if (meta.series) {
+        fm.blog_series = meta.series;
+        if (meta.seriesOrder !== undefined) fm.blog_series_order = meta.seriesOrder;
+      }
+    });
+  }
+
   async commitBlogPost(file: TFile, body: string, meta: BlogPostMeta, index: BlogIndex) {
     const notice = new Notice("正在处理图片…", 0);
     try {
-      const { files, markdown, coverName } = await this.prepareBlogFiles(file, stripLeadingTitle(body, meta.title), meta.slug);
-      const updating = index.posts.has(meta.slug);
-      const postMeta: BlogPostMeta = {
-        ...meta,
-        updated: updating && meta.published !== today() ? today() : undefined,
-        image: meta.image && coverName ? `./images/${meta.slug}/${coverName}` : undefined,
-      };
-      const postPath = `${this.settings.blogPostsDir}/${meta.slug}.md`;
-      files.push({ path: postPath, base64: utf8ToBase64(buildFrontmatter(postMeta) + markdown) });
-
+      const files = await this.buildPostFiles(file, body, meta, index);
       notice.setMessage("正在提交到博客仓库…");
-      await this.blogRepoClient().commitFiles(files, `${updating ? "更新" : "发布"}文章：${meta.title}`);
+      await this.blogRepoClient().commitFiles(files, `${index.posts.has(meta.slug) ? "更新" : "发布"}文章：${meta.title}`);
       notice.hide();
-
-      await this.app.fileManager.processFrontMatter(file, (fm) => {
-        fm.blog_slug = meta.slug;
-        fm.blog_category = meta.category;
-        fm.blog_tags = meta.tags;
-        if (meta.series) {
-          fm.blog_series = meta.series;
-          if (meta.seriesOrder !== undefined) fm.blog_series_order = meta.seriesOrder;
-        }
-      });
-
+      await this.writeBlogFields(file, meta);
       const url = `${this.settings.blogSiteUrl.replace(/\/+$/, "")}/posts/${meta.slug}/`;
       new Notice(meta.draft ? `草稿已提交：${meta.title}` : `已提交，约 3 分钟后上线：${url}`, 10000);
+    } catch (e) {
+      notice.hide();
+      new Notice(`发布失败，博客没有任何改动: ${(e as Error).message}`, 10000);
+    }
+  }
+
+  /** 选一个文件夹，把里面的笔记作为同一系列一次性发布 */
+  async publishFolderToBlog(folder?: TFolder) {
+    const target = folder ?? this.app.workspace.getActiveFile()?.parent ?? undefined;
+    if (!target) {
+      new Notice("请先打开文件夹里的一篇笔记，或在文件夹上右键选择");
+      return;
+    }
+    if (!this.settings.blogToken) {
+      new Notice("请先在设置的「博客」里填写 GitHub Token");
+      return;
+    }
+    const notes = target.children.filter((f): f is TFile => f instanceof TFile && f.extension === "md");
+    if (!notes.length) {
+      new Notice("这个文件夹里没有 Markdown 笔记");
+      return;
+    }
+
+    const notice = new Notice("正在读取博客分类…", 0);
+    let index: BlogIndex;
+    try {
+      index = await this.blogRepoClient().loadIndex();
+    } catch (e) {
+      notice.hide();
+      new Notice(`读取博客失败: ${(e as Error).message}`);
+      return;
+    }
+    notice.hide();
+
+    const entries: BatchEntry[] = [];
+    for (const file of notes) {
+      const body = stripFrontmatter(await this.app.vault.read(file));
+      const fm = this.app.metadataCache.getFileCache(file)?.frontmatter ?? {};
+      const meta = this.initialBlogMeta(file, body, fm, index);
+      const order = meta.seriesOrder ?? seriesNumber(file.basename);
+      if (!fm.published && !index.posts.has(meta.slug)) meta.published = today(new Date(file.stat.mtime));
+      entries.push({
+        file,
+        body,
+        meta,
+        order,
+        selected: order !== undefined,
+        customSlug: Boolean(fm.blog_slug || fm.slug),
+      });
+    }
+    entries.sort((a, b) => (a.order ?? 999) - (b.order ?? 999) || a.file.basename.localeCompare(b.file.basename, "zh"));
+
+    new BlogBatchModal(
+      this.app,
+      {
+        folderName: target.name,
+        entries,
+        index,
+        siteUrl: this.settings.blogSiteUrl.replace(/\/+$/, ""),
+      },
+      (chosen) => this.commitBatch(chosen, index)
+    ).open();
+  }
+
+  async commitBatch(entries: BatchEntry[], index: BlogIndex) {
+    const notice = new Notice("正在处理图片…", 0);
+    try {
+      const files: CommitFile[] = [];
+      for (const [i, entry] of entries.entries()) {
+        notice.setMessage(`正在处理 (${i + 1}/${entries.length})：${entry.meta.title}`);
+        files.push(...(await this.buildPostFiles(entry.file, entry.body, entry.meta, index)));
+      }
+      notice.setMessage("正在提交到博客仓库…");
+      const series = entries[0].meta.series || entries[0].meta.category;
+      await this.blogRepoClient().commitFiles(files, `发布 ${entries.length} 篇文章：${series}`);
+      notice.hide();
+      for (const entry of entries) await this.writeBlogFields(entry.file, entry.meta);
+      new Notice(`已提交 ${entries.length} 篇，约 3 分钟后上线`, 10000);
     } catch (e) {
       notice.hide();
       new Notice(`发布失败，博客没有任何改动: ${(e as Error).message}`, 10000);

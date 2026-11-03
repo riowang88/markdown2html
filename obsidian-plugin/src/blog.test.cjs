@@ -49,7 +49,15 @@ class Modal {
   close() { this.closed = true; }
 }
 
+class TFolder {
+  constructor(name, children) {
+    this.name = name;
+    this.children = children;
+  }
+}
+
 const obsidian = {
+  TFolder,
   App: class {},
   Modal,
   Plugin: class {},
@@ -293,16 +301,20 @@ test("原「Publish to Markdown2HTML」命令 id 现在先弹出选择窗口", a
   plugin.addCommand = (command) => (commands[command.id] = command);
   plugin.addRibbonIcon = () => {};
   plugin.addSettingTab = () => {};
+  plugin.registerEvent = () => {};
+  plugin.app = { workspace: { on: () => ({}) } };
   await plugin.onload();
 
   const calls = [];
   plugin.choosePublishTarget = () => calls.push("choose");
   plugin.publishToBlog = () => calls.push("blog");
   plugin.publishToMd2Html = () => calls.push("md2html");
+  plugin.publishFolderToBlog = () => calls.push("folder");
   commands["publish-to-md2html"].callback();
   commands["publish-to-blog"].callback();
   commands["publish-to-md2html-direct"].callback();
-  assert.deepEqual(calls, ["choose", "blog", "md2html"]);
+  commands["publish-folder-to-blog"].callback();
+  assert.deepEqual(calls, ["choose", "blog", "md2html", "folder"]);
   assert.match(commands["publish-to-md2html"].name, /选择公众号排版或博客/);
 });
 
@@ -316,8 +328,78 @@ test("选择窗口：两个按钮分别进入公众号排版和博客发布", ()
   for (const text of ["打开排版", "发布到博客"]) {
     renderedButtons.length = 0;
     plugin.choosePublishTarget();
-    assert.deepEqual(renderedButtons.map((b) => b.text), ["打开排版", "发布到博客"]);
+    assert.deepEqual(renderedButtons.map((b) => b.text), ["打开排版", "发布到博客", "选择文章"]);
     renderedButtons.find((b) => b.text === text).click();
   }
   assert.deepEqual(calls, ["md2html", "blog"]);
+});
+
+test("从文件名取系列序号：中文数字、第 N 篇、数字前缀", () => {
+  assert.equal(blog.seriesNumber("系列一：为什么起诉小红书"), 1);
+  assert.equal(blog.seriesNumber("系列六：转送义务为何成了一纸空文"), 6);
+  assert.equal(blog.seriesNumber("第十二篇 复盘"), 12);
+  assert.equal(blog.seriesNumber("系列二十一：后记"), 21);
+  assert.equal(blog.seriesNumber("03-部署"), 3);
+  assert.equal(blog.seriesNumber("视频口播文案"), undefined);
+});
+
+test("文件夹批量发布：按序号排序，无序号的默认不勾选，全部合成一个提交", async () => {
+  const mk = (name, mtime) => Object.assign(new TFile(`公众号文章/小红书诉讼系列/${name}.md`), { stat: { mtime } });
+  const notes = [mk("系列二：事情缘由", Date.UTC(2026, 3, 8)), mk("视频口播文案", 0), mk("系列一：为什么起诉小红书", Date.UTC(2026, 3, 8))];
+  const contents = {
+    [notes[0].path]: "# 我把小红书告上了法庭（二）\n\n第二篇正文。",
+    [notes[1].path]: "# 视频口播文案\n\n口播。",
+    [notes[2].path]: "# 我把小红书告上了法庭（一）\n\n第一篇正文。",
+  };
+  const { plugin } = createPlugin();
+  plugin.app.vault.read = async (f) => contents[f.path];
+  plugin.app.metadataCache.getFileCache = () => ({ frontmatter: {} });
+  const written = [];
+  plugin.app.fileManager = { processFrontMatter: async (f, fn) => { const fm = {}; fn(fm); written.push([f.basename, fm.blog_slug]); } };
+
+  const calls = [];
+  requestHandler = async (options) => {
+    const url = options.url.replace("https://api.github.com/repos/owner/blog", "");
+    calls.push({ method: options.method || "GET", url, body: options.body && JSON.parse(options.body) });
+    if (url.startsWith("/contents/")) return json([]);
+    if (url === "/git/ref/heads/main") return json({ object: { sha: "parent" } });
+    if (url === "/git/commits/parent") return json({ tree: { sha: "base" } });
+    if (url === "/git/blobs") return json({ sha: `b${calls.length}` }, 201);
+    if (url === "/git/trees") return json({ sha: "tree" }, 201);
+    if (url === "/git/commits") return json({ sha: "c" }, 201);
+    return json({});
+  };
+
+  let modalOptions;
+  plugin.commitBatch = Md2HtmlPlugin.prototype.commitBatch;
+  const originalOpen = obsidian.Modal.prototype.open;
+  obsidian.Modal.prototype.open = function () { modalOptions = this.options; };
+  try {
+    await plugin.publishFolderToBlog(new TFolder("小红书诉讼系列", notes));
+  } finally {
+    obsidian.Modal.prototype.open = originalOpen;
+  }
+
+  assert.deepEqual(modalOptions.entries.map((e) => [e.file.basename, e.order, e.selected]), [
+    ["系列一：为什么起诉小红书", 1, true],
+    ["系列二：事情缘由", 2, true],
+    ["视频口播文案", undefined, false],
+  ]);
+  assert.equal(modalOptions.entries[0].meta.published, "2026-04-08");
+  assert.equal(modalOptions.entries[0].meta.title, "我把小红书告上了法庭（一）");
+
+  const chosen = modalOptions.entries.filter((e) => e.selected);
+  chosen.forEach((e) => Object.assign(e.meta, { slug: `xhs-${e.order}`, category: "小红书诉讼", series: "小红书诉讼系列", seriesOrder: e.order }));
+  calls.length = 0;
+  await plugin.commitBatch(chosen, blog.buildIndex([]));
+
+  const trees = calls.filter((c) => c.url === "/git/trees");
+  assert.equal(trees.length, 1);
+  assert.deepEqual(trees[0].body.tree.map((t) => t.path), ["src/content/posts/xhs-1.md", "src/content/posts/xhs-2.md"]);
+  assert.equal(calls.filter((c) => c.method === "PATCH").length, 1);
+  assert.deepEqual(written, [["系列一：为什么起诉小红书", "xhs-1"], ["系列二：事情缘由", "xhs-2"]]);
+});
+
+test("简介：开头的引用块导语可作为简介", () => {
+  assert.equal(blog.firstParagraph("> 没请律师，没有法律背景。\n> 从起诉状开始。\n\n正文"), "没请律师，没有法律背景。 从起诉状开始。");
 });

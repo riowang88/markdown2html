@@ -74,6 +74,34 @@ export function stripLeadingTitle(body: string, title: string): string {
   return body;
 }
 
+const CN_DIGITS: Record<string, number> = { 零: 0, 一: 1, 二: 2, 两: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9 };
+
+function parseChineseNumber(text: string): number | undefined {
+  if (!/^[零一二两三四五六七八九十百]+$/.test(text)) return undefined;
+  let total = 0;
+  let digit = 0;
+  for (const ch of text) {
+    if (ch === "百") {
+      total += (digit || 1) * 100;
+      digit = 0;
+    } else if (ch === "十") {
+      total += (digit || 1) * 10;
+      digit = 0;
+    } else {
+      digit = CN_DIGITS[ch];
+    }
+  }
+  return total + digit || undefined;
+}
+
+/** 从「系列三：…」「第12篇」「03-xxx」这类文件名里取序号 */
+export function seriesNumber(name: string): number | undefined {
+  const cn = name.match(/(?:系列|第|篇|章|期)([零一二两三四五六七八九十百]+)|^([零一二两三四五六七八九十百]+)[、：:.\s-]/);
+  if (cn) return parseChineseNumber(cn[1] ?? cn[2]);
+  const digits = name.match(/(?:系列|第|^)\s*(\d+)/);
+  return digits ? Number(digits[1]) : undefined;
+}
+
 export function firstHeading(body: string): string | undefined {
   return body.match(/^\s*# (.+)$/m)?.[1].trim();
 }
@@ -82,8 +110,9 @@ export function firstHeading(body: string): string | undefined {
 export function firstParagraph(body: string, maxLength = 120): string {
   for (const block of body.split(/\r?\n\s*\r?\n/)) {
     const text = block.trim();
-    if (!text || /^(#|!\[|>|```|\||-|\*|\d+\.)/.test(text)) continue;
-    const plain = text.replace(/\[([^\]]*)\]\([^)]*\)/g, "$1").replace(/[*_`]/g, "").replace(/\s+/g, " ");
+    if (!text || /^(#|!\[|```|\||-|\*|\d+\.)/.test(text)) continue;
+    // 开头的引用块通常是导语，去掉引用符号后同样可作简介
+    const plain = text.replace(/^>\s?/gm, "").replace(/\[([^\]]*)\]\([^)]*\)/g, "$1").replace(/[*_`]/g, "").replace(/\s+/g, " ");
     return plain.length > maxLength ? `${plain.slice(0, maxLength)}…` : plain;
   }
   return "";
